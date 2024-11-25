@@ -102,6 +102,7 @@ pub struct GetEntryResponse {
         GetEntryParams,
     ),
 )]
+#[tracing::instrument]
 pub async fn get_entry(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

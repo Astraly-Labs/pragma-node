@@ -14,13 +14,14 @@ use crate::utils::currency_pair_to_pair_id;
     get,
     path = "/node/v1/data/{base}/{quote}/future_expiries",
     responses(
-        (status = 200, description = "Get available future expiries for a pair", body = [GetEntryResponse])
+        (status = 200, description = "Get available future expiries for a pair", body = [Vec<NaiveDateTime>])
     ),
     params(
         ("base" = String, Path, description = "Base Asset"),
         ("quote" = String, Path, description = "Quote Asset"),
     ),
 )]
+#[tracing::instrument]
 pub async fn get_expiries(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

@@ -5,7 +5,6 @@ use tokio::sync::OnceCell;
 pub struct ServerConfig {
     host: String,
     port: u16,
-    metrics_port: u16,
 }
 
 impl Default for ServerConfig {
@@ -13,7 +12,6 @@ impl Default for ServerConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 3000,
-            metrics_port: 8080,
         }
     }
 }
@@ -78,10 +76,6 @@ impl Config {
 
     pub fn server_port(&self) -> u16 {
         self.server.port
-    }
-
-    pub fn metrics_port(&self) -> u16 {
-        self.server.metrics_port
     }
 
     pub fn kafka_topic(&self) -> &str {

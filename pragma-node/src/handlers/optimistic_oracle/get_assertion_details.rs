@@ -16,6 +16,7 @@ use crate::handlers::optimistic_oracle::types::AssertionDetails;
         ("assertion_id" = String, Path, description = "Unique identifier of the assertion"),
     ),
 )]
+#[tracing::instrument]
 pub async fn get_assertion_details(
     State(state): State<AppState>,
     Path(assertion_id): Path<String>,

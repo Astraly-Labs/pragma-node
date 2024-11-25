@@ -53,6 +53,7 @@ pub struct GetOnchainCheckpointsResponse(pub Vec<Checkpoint>);
         GetOnchainCheckpointsParams
     ),
 )]
+#[tracing::instrument]
 pub async fn get_onchain_checkpoints(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

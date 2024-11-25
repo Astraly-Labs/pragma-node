@@ -2,7 +2,6 @@ pub use aws::PragmaSignerBuilder;
 pub use conversion::{
     convert_via_quote, felt_from_decimal, format_bigdecimal_price, normalize_to_decimals,
 };
-pub use custom_extractors::json_extractor::JsonExtractor;
 pub use custom_extractors::path_extractor::PathExtractor;
 pub use signing::starkex::StarkexPrice;
 pub use signing::typed_data::TypedData;

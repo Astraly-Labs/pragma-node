@@ -14,12 +14,19 @@ keywords = ["pragma", "sdk", "consumer", "data", "feeds"]
 [dependencies]
 bigdecimal = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
+color-eyre = { workspace = true }
+init-tracing-opentelemetry = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry-appender-tracing = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry-semantic-conventions = { workspace = true }
+opentelemetry_sdk = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 starknet = { workspace = true }
 strum = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-tracing-axiom = "0.7"
+tracing-opentelemetry = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 utoipa = { workspace = true }
 

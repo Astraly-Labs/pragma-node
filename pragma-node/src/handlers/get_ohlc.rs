@@ -30,6 +30,7 @@ pub struct GetOHLCResponse {
             GetEntryParams,
         ),
     )]
+#[tracing::instrument]
 pub async fn get_ohlc(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

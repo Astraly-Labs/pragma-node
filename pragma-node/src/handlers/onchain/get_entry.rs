@@ -59,6 +59,7 @@ pub struct GetOnchainEntryResponse {
         GetOnchainEntryParams
     ),
 )]
+#[tracing::instrument]
 pub async fn get_onchain_entry(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

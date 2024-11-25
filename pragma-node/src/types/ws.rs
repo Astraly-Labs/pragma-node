@@ -1,7 +1,4 @@
-pub mod metrics;
-
 use governor::{DefaultKeyedRateLimiter, Quota, RateLimiter};
-use metrics::{Interaction, Status};
 use nonzero_ext::nonzero;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -11,6 +8,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
+use crate::metrics::{Interaction, Status};
 use crate::AppState;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::{SplitSink, SplitStream};
@@ -44,6 +42,7 @@ pub enum WebSocketError {
 #[allow(dead_code)]
 pub struct Subscriber<ChannelState> {
     pub id: Uuid,
+    pub endpoint_name: String,
     pub ip_address: IpAddr,
     pub closed: bool,
     pub state: Arc<Mutex<ChannelState>>,
@@ -82,6 +81,7 @@ where
 {
     /// Create a new subscriber tied to a websocket connection.
     pub async fn new(
+        endpoint_name: String,
         socket: WebSocket,
         ip_address: IpAddr,
         app_state: Arc<AppState>,
@@ -94,6 +94,7 @@ where
 
         let mut subscriber = Subscriber {
             id,
+            endpoint_name,
             ip_address,
             closed: false,
             state: Arc::new(Mutex::new(state.unwrap_or_default())),
@@ -132,20 +133,15 @@ where
         H: ChannelHandler<ChannelState, CM, Err>,
         CM: for<'a> Deserialize<'a>,
     {
-        let tracing_span = tracing::span!(tracing::Level::INFO, "subscriber", id = %self.id);
-        let _tracing_guard = tracing_span.enter();
         loop {
             tokio::select! {
                 // Messages from the client
                 maybe_client_msg = self.receiver.next() => {
                     match maybe_client_msg {
                         Some(Ok(client_msg)) => {
-                            tracing::info!("👤 [CLIENT -> SERVER]");
-                            tracing::info!("{:?}", client_msg);
                             handler = self.decode_and_handle(handler, client_msg).await?;
                         }
                         Some(Err(_)) => {
-                            tracing::info!("😶‍🌫️ Client disconnected/error occurred. Closing the channel.");
                             return Ok(());
                         },
                         None => {}
@@ -168,8 +164,6 @@ where
                 // Messages from the server to the client
                 maybe_server_msg = self.notify_receiver.recv() => {
                     if let Some(server_msg) = maybe_server_msg {
-                        tracing::info!("🥡 [SERVER -> CLIENT]");
-                        tracing::info!("{:?}", server_msg);
                         let _ = self.sender.send(server_msg).await;
                     }
                 },
@@ -179,7 +173,6 @@ where
                         self.sender.close().await.ok();
                         self.closed = true;
                         self.record_metric(Interaction::CloseConnection, Status::Success);
-                        tracing::info!("⛔ [CLOSING SIGNAL]");
                         return Ok(());
                     }
                 },
@@ -231,7 +224,6 @@ where
     ) -> Result<Option<T>, WebSocketError> {
         match msg {
             Message::Close(_) => {
-                tracing::info!("📨 [CLOSE]");
                 if self.exit.0.send(true).is_ok() {
                     self.sender
                         .close()
@@ -243,7 +235,6 @@ where
                 }
             }
             Message::Text(text) => {
-                tracing::info!("📨 [TEXT]");
                 let msg = serde_json::from_str::<T>(&text);
                 if let Ok(msg) = msg {
                     return Ok(Some(msg));
@@ -253,7 +244,6 @@ where
                 }
             }
             Message::Binary(payload) => {
-                tracing::info!("📨 [BINARY]");
                 let maybe_msg = serde_json::from_slice::<T>(&payload);
                 if let Ok(msg) = maybe_msg {
                     return Ok(Some(msg));
@@ -281,8 +271,10 @@ where
 
     /// Records a web socket metric.
     pub fn record_metric(&self, interaction: Interaction, status: Status) {
-        self.app_state
-            .ws_metrics
-            .record_interaction(interaction, status);
+        self.app_state.metrics.ws_metrics.record_ws_interaction(
+            &self.endpoint_name,
+            interaction,
+            status,
+        );
     }
 }

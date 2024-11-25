@@ -14,7 +14,7 @@ use crate::infra::repositories::onchain_repository::publisher::RawPublisherUpdat
 /// Structure responsible of holding our Databases caches.
 /// All the caches are initialized empty with their associated time to live in the
 /// constants module.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CacheRegistry {
     onchain_publishers_updates: Cache<String, HashMap<String, RawPublisherUpdates>>,
     merkle_feed_tree: Cache<u64, MerkleTree>,

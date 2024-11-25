@@ -48,6 +48,7 @@ pub struct GetAssertionsParams {
 pub struct Assertion {
     pub assertion_id: String,
     pub claim: String,
+    #[schema(value_type = String)]
     pub bond: BigDecimal,
     pub expiration_time: NaiveDateTime,
     pub identifier: String,

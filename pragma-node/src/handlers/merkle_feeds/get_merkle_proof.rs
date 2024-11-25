@@ -15,7 +15,7 @@ use crate::types::hex_hash::HexHash;
 use crate::utils::PathExtractor;
 use crate::AppState;
 
-#[derive(Default, Deserialize, IntoParams, ToSchema)]
+#[derive(Default, Deserialize, IntoParams, ToSchema, Debug)]
 pub struct GetMerkleProofQuery {
     pub network: Option<Network>,
     pub block_id: Option<BlockId>,
@@ -35,6 +35,7 @@ pub struct GetMerkleProofResponse(pub MerkleProof);
         GetMerkleProofQuery
     ),
 )]
+#[tracing::instrument]
 pub async fn get_merkle_feeds_proof(
     State(state): State<AppState>,
     PathExtractor(option_hex_hash): PathExtractor<HexHash>,

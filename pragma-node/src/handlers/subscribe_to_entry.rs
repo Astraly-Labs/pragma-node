@@ -44,17 +44,7 @@ pub struct SubscribeToEntryResponse {
     pub timestamp: UnixTimestamp,
 }
 
-#[utoipa::path(
-    get,
-    path = "/node/v1/data/subscribe",
-    responses(
-        (
-            status = 200,
-            description = "Subscribe to a list of entries",
-            body = [SubscribeToEntryResponse]
-        )
-    )
-)]
+#[tracing::instrument]
 pub async fn subscribe_to_entry(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
@@ -71,6 +61,7 @@ const CHANNEL_UPDATE_INTERVAL_IN_MS: u64 = 500;
 
 async fn create_new_subscriber(socket: WebSocket, app_state: AppState, client_addr: SocketAddr) {
     let (mut subscriber, _) = match Subscriber::<SubscriptionState>::new(
+        "subscribe_to_entry".into(),
         socket,
         client_addr.ip(),
         Arc::new(app_state),
