@@ -11,7 +11,7 @@ use pragma_entities::{EntryError, VolatilityError};
 use crate::utils::{compute_volatility, currency_pair_to_pair_id};
 
 /// Volatility query
-#[derive(Deserialize, IntoParams, Debug)]
+#[derive(Deserialize, IntoParams)]
 pub struct VolatilityQuery {
     /// Initial timestamp, combined with final_timestamp, it helps define the period over which the mean is computed
     start: u64,
@@ -38,7 +38,6 @@ pub struct GetVolatilityResponse {
             VolatilityQuery
         ),
     )]
-#[tracing::instrument]
 pub async fn get_volatility(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

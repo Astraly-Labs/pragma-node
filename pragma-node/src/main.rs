@@ -5,13 +5,11 @@ mod errors;
 mod handlers;
 mod infra;
 mod metrics;
-mod server;
+mod servers;
 mod types;
 mod utils;
 
 use dotenvy::dotenv;
-use metrics::MetricsRegistry;
-use std::fmt;
 use std::sync::Arc;
 
 use caches::CacheRegistry;
@@ -21,7 +19,9 @@ use starknet::signers::SigningKey;
 use pragma_entities::connection::{ENV_OFFCHAIN_DATABASE_URL, ENV_ONCHAIN_DATABASE_URL};
 
 use crate::config::config;
+use crate::metrics::MetricsRegistry;
 use crate::utils::PragmaSignerBuilder;
+use types::ws::metrics::WsMetrics;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -36,18 +36,7 @@ pub struct AppState {
     // Pragma Signer used for StarkEx signing
     pragma_signer: Option<SigningKey>,
     // Metrics
-    metrics: Arc<MetricsRegistry>,
-}
-
-impl fmt::Debug for AppState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("AppState")
-            .field("redis_client", &self.redis_client)
-            .field("caches", &self.caches)
-            .field("pragma_signer", &self.pragma_signer)
-            .field("metrics", &self.metrics)
-            .finish_non_exhaustive()
-    }
+    ws_metrics: Arc<WsMetrics>,
 }
 
 #[tokio::main]
@@ -55,12 +44,7 @@ impl fmt::Debug for AppState {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    // TODO: OTEL_EXPORTER_OTLP_ENDPOINT should be read from env.
-    pragma_common::telemetry::init_telemetry(
-        "pragma-node".into(),
-        "http://localhost:4317".into(),
-        None,
-    )?;
+    pragma_common::tracing::init_tracing("pragma-node")?;
 
     let config = config().await;
 
@@ -100,16 +84,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    // Create the Metrics registry
+    let metrics_registry = MetricsRegistry::new();
+    let ws_metrics = WsMetrics::new(&metrics_registry).expect("Failed to create WsMetrics");
+
     let state = AppState {
         offchain_pool,
         onchain_pool,
         redis_client,
         caches: Arc::new(caches),
         pragma_signer,
-        metrics: MetricsRegistry::new(),
+        ws_metrics: Arc::new(ws_metrics),
     };
 
-    server::run_api_server(config, state).await;
+    tokio::join!(
+        servers::app::run_app_server(config, state),
+        servers::metrics::run_metrics_server(config, metrics_registry)
+    );
 
     // Ensure that the tracing provider is shutdown correctly
     opentelemetry::global::shutdown_tracer_provider();

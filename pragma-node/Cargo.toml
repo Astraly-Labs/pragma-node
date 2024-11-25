@@ -9,7 +9,6 @@ aws-config = { workspace = true, features = ["behavior-version-latest"] }
 aws-sdk-secretsmanager = { workspace = true }
 axum = { workspace = true, features = ["macros", "ws", "tokio"] }
 axum-macros = { workspace = true }
-axum-tracing-opentelemetry = { workspace = true }
 bigdecimal = { workspace = true, features = ["serde"] }
 cainome = { workspace = true, features = ["abigen-rs"] }
 chrono = { workspace = true, features = ["serde"] }
@@ -29,9 +28,8 @@ lazy_static = { workspace = true }
 moka = { workspace = true, features = ["future"] }
 nonzero_ext = { workspace = true }
 opentelemetry = { workspace = true }
-pragma-common = { path = "../pragma-common" }
-pragma-entities = { path = "../pragma-entities" }
 pragma-monitoring = { workspace = true }
+prometheus = { workspace = true }
 rdkafka = { workspace = true }
 redis = { workspace = true, features = ["tokio-comp", "json"] }
 serde = { workspace = true, features = ["derive"] }
@@ -45,8 +43,11 @@ tower-http = { workspace = true, features = ["fs", "trace", "cors"] }
 tracing = { workspace = true }
 utoipa = { workspace = true }
 utoipa-swagger-ui = { workspace = true, features = ["axum"] }
-utoipauto = { workspace = true }
 uuid = { workspace = true, features = ["fast-rng", "v4", "serde"] }
+
+pragma-common = { path = "../pragma-common" }
+pragma-entities = { path = "../pragma-entities" }
+utoipauto = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }

@@ -19,10 +19,10 @@ authors = ["Pragma Labs <support@pragma.build>"]
 color-eyre = "0.6"
 aws-config = { version = "1.5.1", features = ["behavior-version-latest"] }
 aws-sdk-secretsmanager = "1.32.0"
-axum = { version = "0.7.7", features = ["macros", "ws", "tokio"] }
+axum = { version = "0.6", features = ["macros", "ws", "tokio"] }
 axum-macros = "0.3"
 cainome = { git = "https://github.com/cartridge-gg/cainome", tag = "v0.4.5", features = [
-  "abigen-rs",
+    "abigen-rs",
 ] }
 diesel = { version = "2.1", features = [
   "postgres",
@@ -42,7 +42,8 @@ chrono = { version = "0.4.26", features = ["serde"] }
 lazy_static = "1.4.0"
 serde = { version = "1.0.204", features = ["derive"] }
 moka = { version = "0.12", features = ["future"] }
-opentelemetry = { version = "0.26.0", features = ["metrics", "logs"] }
+opentelemetry = { version = "0.22" }
+prometheus = "0.13.4"
 nonzero_ext = { version = "0.3.0" }
 serde_json = { version = "1.0.122", features = ["arbitrary_precision"] }
 starknet = "0.12.0"
@@ -57,33 +58,14 @@ strum = { version = "0.26", features = ["derive"] }
 tracing = "0.1.4"
 tracing-test = "0.2.5"
 url = "2.5.0"
-tower-http = { version = "0.6.2", features = ["fs", "trace", "cors"] }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tokio = { version = "~1.38.0", features = ["full"] }
+tower-http = { version = "0.4.0", features = ["fs", "trace", "cors"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1.11.0", features = ["full"] }
 toml = "0.8.8"
-utoipa = { version = "5.0.0", features = ["axum_extras", "chrono", "uuid"] }
+utoipa = { version = "4", features = ["axum_extras", "chrono", "uuid"] }
 utoipauto = "0.1.14"
-utoipa-swagger-ui = { version = "8.0.3", features = ["axum"] }
+utoipa-swagger-ui = { version = "4", features = ["axum"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
-init-tracing-opentelemetry = { version = "0.22.0", features = [
-  "otlp",
-  "tracing_subscriber_ext",
-] }
-axum-tracing-opentelemetry = "0.21.1"
-opentelemetry-otlp = { version = "0.26.0", features = [
-  "metrics",
-  "tonic",
-  "logs",
-] }
-tracing-opentelemetry-instrumentation-sdk = "0.21.0"
-opentelemetry_sdk = { version = "0.26.0", features = [
-  "metrics",
-  "rt-tokio",
-  "logs",
-] }
-tracing-opentelemetry = "0.27.0"
-opentelemetry-appender-tracing = "0.26.0"
-opentelemetry-semantic-conventions = "0.26.0"
 
 pragma-monitoring = { git = "https://github.com/astraly-labs/pragma-monitoring" }
 
@@ -98,3 +80,6 @@ testcontainers-modules = { version = "0.9.0", features = [
   "http_wait",
 ] }
 pretty_assertions = "1.4.0"
+
+[workspace.patch.crates-io]
+quote = { version = "1.0.37" }

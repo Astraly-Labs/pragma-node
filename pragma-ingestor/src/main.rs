@@ -14,14 +14,7 @@ mod error;
 #[tracing::instrument]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = dotenv(); // .env file is not present in prod
-
-    // TODO: OTEL_EXPORTER_OTLP_ENDPOINT should be read from env.
-    pragma_common::telemetry::init_telemetry(
-        "pragma-ingestor".into(),
-        "http://localhost:4317".into(),
-        None,
-    )?;
-
+    pragma_common::tracing::init_tracing("pragma-ingestor")?;
     info!(
         "kafka configuration : hostname={:?}, group_id={}, topic={}",
         config::CONFIG.brokers,

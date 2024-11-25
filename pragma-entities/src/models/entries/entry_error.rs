@@ -13,7 +13,7 @@ pub enum VolatilityError {
     InvalidTimestampsRange(u64, u64),
 }
 
-#[derive(Debug, thiserror::Error, ToSchema)]
+#[derive(Debug, thiserror::Error)]
 pub enum SigningError {
     #[error("Invalid message: {0}")]
     InvalidMessageError(String),

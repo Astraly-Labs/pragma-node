@@ -1,4 +1,4 @@
-use axum::extract::{self, State};
+use axum::extract::State;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use pragma_entities::{EntryError, NewFutureEntry, PublisherError};
@@ -10,7 +10,7 @@ use crate::config::config;
 use crate::infra::kafka;
 use crate::infra::repositories::publisher_repository;
 use crate::types::entries::FutureEntry;
-use crate::utils::{assert_request_signature_is_valid, felt_from_decimal};
+use crate::utils::{assert_request_signature_is_valid, felt_from_decimal, JsonExtractor};
 use crate::AppState;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -47,10 +47,9 @@ pub struct CreateFutureEntryResponse {
         (status = 401, description = "Unauthorized Publisher", body = EntryError)
     )
 )]
-#[tracing::instrument]
 pub async fn create_future_entries(
     State(state): State<AppState>,
-    extract::Json(new_entries): extract::Json<CreateFutureEntryRequest>,
+    JsonExtractor(new_entries): JsonExtractor<CreateFutureEntryRequest>,
 ) -> Result<Json<CreateFutureEntryResponse>, EntryError> {
     tracing::info!("Received new future entries: {:?}", new_entries);
 

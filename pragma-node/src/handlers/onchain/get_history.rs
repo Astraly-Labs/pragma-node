@@ -46,7 +46,6 @@ pub struct GetOnchainHistoryResponse(pub Vec<GetOnchainHistoryEntry>);
         GetOnchainHistoryParams
     ),
 )]
-#[tracing::instrument]
 pub async fn get_onchain_history(
     State(state): State<AppState>,
     PathExtractor(pair): PathExtractor<(String, String)>,

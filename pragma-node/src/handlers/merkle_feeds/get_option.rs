@@ -13,7 +13,7 @@ use crate::infra::redis;
 use crate::utils::PathExtractor;
 use crate::AppState;
 
-#[derive(Default, Deserialize, IntoParams, ToSchema, Debug)]
+#[derive(Default, Deserialize, IntoParams, ToSchema)]
 pub struct GetOptionQuery {
     pub network: Option<Network>,
     #[serde(rename = "block_id")]
@@ -38,7 +38,6 @@ pub struct GetOptionResponse {
         GetOptionQuery
     ),
 )]
-#[tracing::instrument]
 pub async fn get_merkle_feeds_option(
     State(state): State<AppState>,
     PathExtractor(instrument): PathExtractor<String>,

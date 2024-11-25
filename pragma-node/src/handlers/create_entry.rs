@@ -1,4 +1,4 @@
-use axum::extract::{self, State};
+use axum::extract::State;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use pragma_entities::{EntryError, NewEntry, PublisherError};
@@ -10,7 +10,7 @@ use crate::config::config;
 use crate::infra::kafka;
 use crate::infra::repositories::publisher_repository;
 use crate::types::entries::Entry;
-use crate::utils::{assert_request_signature_is_valid, felt_from_decimal};
+use crate::utils::{assert_request_signature_is_valid, felt_from_decimal, JsonExtractor};
 use crate::AppState;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -47,10 +47,9 @@ pub struct CreateEntryResponse {
         (status = 401, description = "Unauthorized Publisher", body = EntryError)
     )
 )]
-#[tracing::instrument]
 pub async fn create_entries(
     State(state): State<AppState>,
-    extract::Json(new_entries): extract::Json<CreateEntryRequest>,
+    JsonExtractor(new_entries): JsonExtractor<CreateEntryRequest>,
 ) -> Result<Json<CreateEntryResponse>, EntryError> {
     tracing::info!("Received new entries: {:?}", new_entries);
 

@@ -13,9 +13,10 @@ use utoipa::{ToResponse, ToSchema};
 
 use crate::infra::repositories::entry_repository::OHLCEntry;
 use crate::infra::repositories::onchain_repository;
+use crate::types::ws::metrics::{Interaction, Status};
 use crate::types::ws::{ChannelHandler, Subscriber, SubscriptionType};
 use crate::utils::is_onchain_existing_pair;
-use crate::{metrics, AppState};
+use crate::AppState;
 
 use axum::extract::ws::{WebSocket, WebSocketUpgrade};
 
@@ -25,6 +26,17 @@ pub struct GetOnchainOHLCResponse {
     pub data: Vec<OHLCEntry>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/node/v1/onchain/ohlc/subscribe",
+    responses(
+        (
+            status = 200,
+            description = "Subscribe to a list of OHLC entries",
+            body = [SubscribeToEntryResponse]
+        )
+    )
+)]
 pub async fn subscribe_to_onchain_ohlc(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
@@ -38,7 +50,6 @@ const CHANNEL_UPDATE_INTERVAL_IN_MS: u64 = 30000; // 30 seconds
 
 async fn create_new_subscriber(socket: WebSocket, app_state: AppState, client_addr: SocketAddr) {
     let (mut subscriber, _) = match Subscriber::<SubscriptionState>::new(
-        "subscribe_to_ohlc".into(),
         socket,
         client_addr.ip(),
         Arc::new(app_state),
@@ -198,7 +209,7 @@ impl WsOHLCHandler {
                 "Rate limit exceeded. Closing connection.",
             );
 
-            subscriber.record_metric(metrics::Interaction::RateLimit, metrics::Status::Error);
+            subscriber.record_metric(Interaction::RateLimit, Status::Error);
 
             subscriber.send_err("Rate limit exceeded.").await;
             subscriber.sender.close().await?;

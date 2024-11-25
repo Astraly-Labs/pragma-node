@@ -20,7 +20,6 @@ pub const DEFAULT_LIMIT: u32 = 100;
         ("limit" = Option<u32>, Query, description = "Number of items per page"),
     ),
 )]
-#[tracing::instrument]
 pub async fn get_disputed_assertions(
     State(state): State<AppState>,
     Query(params): Query<GetDisputedAssertionsParams>,

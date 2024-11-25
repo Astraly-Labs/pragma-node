@@ -1,8 +1,10 @@
 pub(crate) mod routes;
 
-use axum_tracing_opentelemetry::middleware::{OtelAxumLayer, OtelInResponseLayer};
 use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
+use tower_http::{
+    cors::CorsLayer,
+    trace::{DefaultMakeSpan, TraceLayer},
+};
 use utoipa::{
     openapi::{
         security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -13,7 +15,7 @@ use utoipa::{
 use utoipauto::utoipauto;
 
 use crate::errors::internal_error;
-use crate::{config::Config, server::routes::app_router, AppState};
+use crate::{config::Config, servers::app::routes::app_router, AppState};
 
 struct SecurityAddon;
 
@@ -44,7 +46,7 @@ impl Modify for ServerAddon {
 }
 
 #[tracing::instrument(skip(state))]
-pub async fn run_api_server(config: &Config, state: AppState) {
+pub async fn run_app_server(config: &Config, state: AppState) {
     #[utoipauto(
         paths = "./pragma-node/src, ./pragma-common/src from pragma_common, ./pragma-entities/src from pragma_entities"
     )]
@@ -65,8 +67,10 @@ pub async fn run_api_server(config: &Config, state: AppState) {
     let app = app_router::<ApiDoc>(state.clone())
         .with_state(state)
         // Logging so we can see whats going on
-        .layer(OtelAxumLayer::default())
-        .layer(OtelInResponseLayer)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+        )
         // Permissive CORS layer to allow all origins
         .layer(CorsLayer::permissive());
 
@@ -74,17 +78,13 @@ pub async fn run_api_server(config: &Config, state: AppState) {
     let port = config.server_port();
     let address = format!("{}:{}", host, port);
     let socket_addr: SocketAddr = address.parse().unwrap();
-    let listener = tokio::net::TcpListener::bind(socket_addr)
-        .await
-        .expect("Invalid API server address.");
 
     tracing::info!("🚀 API started at http://{}", socket_addr);
-
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .await
-    .map_err(internal_error)
-    .unwrap();
+    tokio::spawn(async move {
+        axum::Server::bind(&socket_addr)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .await
+            .map_err(internal_error)
+            .unwrap()
+    });
 }

@@ -166,7 +166,6 @@ services:
   pragma-ingestor-1:
     container_name: "pragma-ingestor-1"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
       - DATABASE_MAX_CONN=25
       - BROKERS=pragma-kafka:9092
       - TOPIC=pragma-data
