@@ -24,6 +24,7 @@ use pragma_entities::{
     schema::currencies,
     Currency, Entry, NewEntry,
 };
+use serde::Deserializer;
 
 // SQL statement used to filter the expiration timestamp for future entries
 fn get_expiration_timestamp_filter(
@@ -675,11 +676,25 @@ impl TryFrom<RawMedianEntryWithComponents> for MedianEntryWithComponents {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EntryComponent {
     pub pair_id: String,
+    #[serde(deserialize_with = "deserialize_big_decimal")]
     pub price: BigDecimal,
     pub timestamp: String,
     pub publisher: String,
     pub publisher_address: String,
     pub publisher_signature: String,
+}
+
+fn deserialize_big_decimal<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+    let price_str = value.to_string();
+    Ok(BigDecimal::new(
+        num_bigint::BigInt::parse_bytes(price_str.as_bytes(), 10)
+            .ok_or_else(|| serde::de::Error::custom("Failed to parse BigInt"))?,
+        0,
+    ))
 }
 
 impl TryFrom<EntryComponent> for SignedPublisherPrice {

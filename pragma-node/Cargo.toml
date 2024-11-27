@@ -28,6 +28,7 @@ indexmap = { workspace = true, features = ["serde"] }
 lazy_static = { workspace = true }
 moka = { workspace = true, features = ["future"] }
 nonzero_ext = { workspace = true }
+num-bigint = "0.4.6"
 opentelemetry = { workspace = true }
 pragma-common = { path = "../pragma-common" }
 pragma-entities = { path = "../pragma-entities" }

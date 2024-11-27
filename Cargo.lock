@@ -4226,6 +4226,7 @@ dependencies = [
  "lazy_static",
  "moka",
  "nonzero_ext",
+ "num-bigint",
  "opentelemetry 0.26.0",
  "pragma-common",
  "pragma-entities",
