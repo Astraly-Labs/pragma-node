@@ -51,6 +51,7 @@ pub async fn subscribe_to_entry(
     ConnectInfo(client_addr): ConnectInfo<SocketAddr>,
 ) -> impl IntoResponse {
     if state.pragma_signer.is_none() {
+        tracing::error!("No Pragma signer found");
         return (StatusCode::LOCKED, "Locked: Pragma signer not found").into_response();
     }
     ws.on_upgrade(move |socket| create_new_subscriber(socket, state, client_addr))
@@ -253,7 +254,7 @@ impl WsEntriesHandler {
             usd_pairs,
             non_usd_pairs
         );
-        let mark_pricer_usd = IndexPricer::new(usd_pairs, DataType::PerpEntry);
+        let mark_pricer_usd = MarkPricer::new(usd_pairs, DataType::PerpEntry);
         let mark_pricer_non_usd = MarkPricer::new(non_usd_pairs, DataType::PerpEntry);
 
         // Compute entries concurrently

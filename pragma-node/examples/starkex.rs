@@ -7,7 +7,7 @@ use crossterm::{
 use futures_util::{SinkExt as _, StreamExt as _};
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, ListState},
     Terminal,
 };
 use serde::{Deserialize, Serialize};
@@ -19,14 +19,77 @@ use url::Url;
 
 const TEST_PAIRS: &[&str] = &[
     "BTC/USD",
-    // "ETH/USD",
-    // "SOL/USD",
+    "ETH/USD",
+    "SOL/USD",
+    "DOGE/USD",
+    "BNB/USD",
+    // "XRP/USD",
+    // "1000PEPE/USD",
+    // "WIF/USD",
+    // "NEAR/USD",
     // "AVAX/USD",
-    // "MATIC/USD",
+    // "LTC/USD",
+    // "TRX/USD",
+    // "ADA/USD",
+    // "LINK/USD",
+    // "BCH/USD",
     // "ARB/USD",
+    // "WLD/USD",
+    // "OP/USD",
+    // "ONDO/USD",
+    // "SUI/USD",
+    // "ATOM/USD",
+    // "FIL/USD",
+    // "TIA/USD",
+    // "POPCAT/USD",
+    // "SEI/USD",
+    // "FTM/USD",
+    // "GOAT/USD",
+    // "1000BONK/USD",
+    // "1000SHIB/USD",
+    // "MOODENG/USD",
+    // "LDO/USD",
+    // "APE/USD",
+    // "JUP/USD",
+    // "CRV/USD",
 ];
 
-const TEST_MARK_PAIRS: &[&str] = &["BTC/USD"];
+const TEST_MARK_PAIRS: &[&str] = &[
+    // "BTC/USD",
+    // "ETH/USD",
+    // "SOL/USD",
+    // "DOGE/USD",
+    // "BNB/USD",
+    // "XRP/USD",
+    // "1000PEPE/USD",
+    // "WIF/USD",
+    // "NEAR/USD",
+    // "AVAX/USD",
+    // "LTC/USD",
+    // "TRX/USD",
+    // "ADA/USD",
+    // "LINK/USD",
+    // "BCH/USD",
+    // "ARB/USD",
+    // "WLD/USD",
+    // "OP/USD",
+    // "ONDO/USD",
+    // "SUI/USD",
+    // "ATOM/USD",
+    // "FIL/USD",
+    // "TIA/USD",
+    // "POPCAT/USD",
+    // "SEI/USD",
+    // "FTM/USD",
+    // "GOAT/USD",
+    // "1000BONK/USD",
+    // "1000SHIB/USD",
+    // "MOODENG/USD",
+    // "LDO/USD",
+    // "APE/USD",
+    // "JUP/USD",
+    // "CRV/USD",
+];
 
 #[derive(Serialize, Deserialize, Debug)]
 struct SubscribeMessage {
@@ -96,6 +159,8 @@ struct App {
     latest_update: Option<SubscribeToEntryResponse>,
     should_quit: bool,
     current_time: i64,
+    last_timestamps: std::collections::HashMap<String, i64>,
+    scroll_offset: usize,
 }
 
 impl App {
@@ -105,6 +170,8 @@ impl App {
             latest_update: None,
             should_quit: false,
             current_time: Utc::now().timestamp(),
+            last_timestamps: std::collections::HashMap::new(),
+            scroll_offset: 0,
         }
     }
 }
@@ -187,8 +254,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Handle events
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    app.should_quit = true;
+                match key.code {
+                    KeyCode::Char('q') => app.should_quit = true,
+                    KeyCode::Up => {
+                        if app.scroll_offset > 0 {
+                            app.scroll_offset -= 1;
+                        }
+                    }
+                    KeyCode::Down => {
+                        app.scroll_offset += 1;
+                    }
+                    _ => {}
                 }
             }
         }
@@ -198,6 +274,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(ack) = serde_json::from_str::<SubscriptionAck>(&text) {
                 app.subscription_pairs = ack.pairs;
             } else if let Ok(response) = serde_json::from_str::<SubscribeToEntryResponse>(&text) {
+                // Update timestamps only for changed prices
+                for price in &response.oracle_prices {
+                    let key = price.global_asset_id.clone();
+                    if app.latest_update.as_ref()
+                        .map_or(true, |last| last.oracle_prices
+                            .iter()
+                            .find(|p| p.global_asset_id == key)
+                            .map_or(true, |p| p.median_price != price.median_price))
+                    {
+                        app.last_timestamps.insert(key, response.timestamp);
+                    }
+                }
                 app.latest_update = Some(response);
             }
         }
@@ -293,9 +381,9 @@ fn ui(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Subscription status
-            Constraint::Length(3), // Missing pairs
-            Constraint::Min(10),   // Price updates
+            Constraint::Length(3),  // Subscription status
+            Constraint::Length(3),  // Missing pairs
+            Constraint::Min(0),     // Price updates - takes remaining space
         ])
         .split(f.size());
 
@@ -316,15 +404,10 @@ fn ui(f: &mut Frame, app: &App) {
     }
 
     // Subscription header
-    let subscribed_pairs = Paragraph::new(format!(
-        "Subscribed Pairs: {}",
-        app.subscription_pairs.join(", ")
-    ))
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title("Subscription Status"),
-    );
+    let subscription_text = format!("Subscribed Pairs: {}", app.subscription_pairs.join(", "));
+    let subscribed_pairs = Paragraph::new(subscription_text)
+        .block(Block::default().borders(Borders::ALL).title("Subscription Status"))
+        .wrap(ratatui::widgets::Wrap { trim: true });  // Add text wrapping
     f.render_widget(subscribed_pairs, chunks[0]);
 
     // Missing pairs section
@@ -355,36 +438,44 @@ fn ui(f: &mut Frame, app: &App) {
                 price.global_asset_id.clone()
             };
 
+            let latency_ms = (app.current_time - app.last_timestamps
+                .get(&price.global_asset_id)
+                .copied()
+                .unwrap_or(update.timestamp)) * 1000;
+            let latency_text = format!("⏱ {}ms", latency_ms);
+
             items.push(ListItem::new(vec![
                 Line::from(format!(
-                    "🔸 Asset: {} ({})",
-                    asset_display, price.global_asset_id
+                    "🔸 Asset: {} ({}) ⏱ {}ms",
+                    asset_display,
+                    price.global_asset_id,
+                    latency_ms
                 )),
                 Line::from(format!("  ├─ Median Price: {}", price.median_price)),
                 Line::from(format!("  ├─ Publishers: {}", price.signed_prices.len())),
             ]));
 
             for (idx, pub_price) in price.signed_prices.iter().enumerate() {
+                let truncated_key = format!(
+                    "{}...{}",
+                    &pub_price.signing_key[..10],
+                    &pub_price.signing_key[pub_price.signing_key.len() - 8..]
+                );
                 items.push(ListItem::new(vec![
-                    Line::from(format!(
-                        "     {}. Price: {}",
-                        idx + 1,
-                        pub_price.oracle_price
-                    )),
-                    Line::from(format!(
-                        "        Key: {}...{}",
-                        &pub_price.signing_key[..10],
-                        &pub_price.signing_key[pub_price.signing_key.len() - 8..]
-                    )),
+                    Line::from(format!("     {}. Price: {}", idx + 1, pub_price.oracle_price)),
+                    Line::from(format!("        Key: {}", truncated_key)),
                 ]));
             }
         }
 
-        let prices_list = List::new(items).block(
-            Block::default()
+        let prices_list = List::new(items)
+            .block(Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Price Updates (Timestamp: {})", update.timestamp)),
-        );
-        f.render_widget(prices_list, chunks[2]);
+                .title(format!("Price Updates (Timestamp: {})", update.timestamp)))
+            .style(Style::default())
+            .start_corner(ratatui::layout::Corner::TopLeft)
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD));
+
+        f.render_stateful_widget(prices_list, chunks[2], &mut ListState::default().with_offset(app.scroll_offset));
     }
 }

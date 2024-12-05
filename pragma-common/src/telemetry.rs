@@ -24,6 +24,21 @@ pub fn init_telemetry(
     collection_endpoint: String,
     log_level: Option<Level>,
 ) -> Result<()> {
+    if std::env::var("DISABLE_TELEMETRY").unwrap_or_default() == "true" {
+        let tracing_subscriber = tracing_subscriber::registry()
+            .with(LevelFilter::from_level(log_level.unwrap_or(Level::INFO)))
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .with_target(false)
+                    .with_file(false)
+                    .with_line_number(false)
+                    .pretty(),
+            );
+
+        tracing_subscriber.init();
+        return Ok(());
+    }
+
     let tracing_subscriber = tracing_subscriber::registry()
         .with(build_otel_layer()?)
         .with(LevelFilter::from_level(log_level.unwrap_or(Level::INFO)))
