@@ -84,7 +84,7 @@ class PricePublisher:
                 datetime.now(pytz.UTC),
                 self._generate_price(),
                 "TEST",
-                None
+                f"TEST_SIGNATURE_{publisher}",
             ))
             conn.commit()
 
