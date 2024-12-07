@@ -238,6 +238,7 @@ impl WsEntriesHandler {
         state: &AppState,
         subscription: &SubscriptionState,
     ) -> Result<Vec<MedianEntryWithComponents>, EntryError> {
+        // Used to compute the spot prices of subscribed entries.
         let index_pricer = IndexPricer::new(
             subscription.get_subscribed_spot_pairs(),
             DataType::SpotEntry,
@@ -251,15 +252,10 @@ impl WsEntriesHandler {
                 pair.ends_with("USD")
             });
 
-        tracing::info!(
-            "USD pairs: {:?}, non-USD pairs: {:?}",
-            usd_pairs,
-            non_usd_pairs
-        );
-
         // Used to compute the mark price of pairs that are *eventually* quoted in USD.
         // For example, BTC/USD:MARK. It is not clear yet if those are really published.
         let index_pricer_usd = IndexPricer::new(usd_pairs, DataType::PerpEntry);
+
         // For pairs that are quoted in USDT.
         // See the MarkPricer docstring for more.
         let mark_pricer_non_usd = MarkPricer::new(non_usd_pairs, DataType::PerpEntry);
