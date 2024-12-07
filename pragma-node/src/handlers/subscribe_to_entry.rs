@@ -116,8 +116,6 @@ impl ChannelHandler<SubscriptionState, SubscriptionRequest, EntryError> for WsEn
         let (existing_spot_pairs, existing_perp_pairs) =
             only_existing_pairs(&subscriber.app_state.offchain_pool, request.pairs).await;
 
-        tracing::info!("EXISTING PERP PAIRS: {:?}", existing_perp_pairs);
-
         let mut state = subscriber.state.lock().await;
         match request.msg_type {
             SubscriptionType::Subscribe => {
@@ -253,13 +251,17 @@ impl WsEntriesHandler {
                 pair.ends_with("USD")
             });
 
-        tracing::debug!(
+        tracing::info!(
             "USD pairs: {:?}, non-USD pairs: {:?}",
             usd_pairs,
             non_usd_pairs
         );
 
-        let index_pricer_usd = IndexPricer::new(usd_pairs, DataType::SpotEntry);
+        // Used to compute the mark price of pairs that are *eventually* quoted in USD.
+        // For example, BTC/USD:MARK. It is not clear yet if those are really published.
+        let index_pricer_usd = IndexPricer::new(usd_pairs, DataType::PerpEntry);
+        // For pairs that are quoted in USDT.
+        // See the MarkPricer docstring for more.
         let mark_pricer_non_usd = MarkPricer::new(non_usd_pairs, DataType::PerpEntry);
 
         // Compute entries concurrently
