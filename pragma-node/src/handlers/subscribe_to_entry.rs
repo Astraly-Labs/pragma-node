@@ -115,6 +115,9 @@ impl ChannelHandler<SubscriptionState, SubscriptionRequest, EntryError> for WsEn
     ) -> Result<(), EntryError> {
         let (existing_spot_pairs, existing_perp_pairs) =
             only_existing_pairs(&subscriber.app_state.offchain_pool, request.pairs).await;
+
+        tracing::info!("EXISTING PERP PAIRS: {:?}", existing_perp_pairs);
+
         let mut state = subscriber.state.lock().await;
         match request.msg_type {
             SubscriptionType::Subscribe => {
@@ -249,18 +252,20 @@ impl WsEntriesHandler {
                 tracing::debug!("Checking pair for USD: {}", pair);
                 pair.ends_with("USD")
             });
+
         tracing::debug!(
             "USD pairs: {:?}, non-USD pairs: {:?}",
             usd_pairs,
             non_usd_pairs
         );
-        let mark_pricer_usd = MarkPricer::new(usd_pairs, DataType::PerpEntry);
+
+        let index_pricer_usd = IndexPricer::new(usd_pairs, DataType::SpotEntry);
         let mark_pricer_non_usd = MarkPricer::new(non_usd_pairs, DataType::PerpEntry);
 
         // Compute entries concurrently
         let (index_entries, usd_mark_entries, non_usd_mark_entries) = tokio::join!(
             index_pricer.compute(&state.offchain_pool),
-            mark_pricer_usd.compute(&state.offchain_pool),
+            index_pricer_usd.compute(&state.offchain_pool),
             mark_pricer_non_usd.compute(&state.offchain_pool)
         );
 
